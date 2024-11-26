@@ -17,6 +17,7 @@
 #include "string-list.h"
 #include "strmap.h"
 #include "trace2.h"
+#include "unity.h"
 
 /* Table of rename/copy destinations */
 
@@ -129,6 +130,41 @@ static void inexact_prefetch(void *prefetch_options)
 	oid_array_clear(&to_fetch);
 }
 
+static int unity_metafile_different_guids(struct repository *r,
+				   struct diff_filespec *src,
+				   struct diff_filespec *dst)
+{
+	char src_guid[32], dst_guid[32];
+	int src_is_metafile, dst_is_metafile;
+
+	src_is_metafile = unity_is_metafile(r, src->path);
+	dst_is_metafile = unity_is_metafile(r, dst->path);
+
+	// Check if neither one is a metafile
+	if (!src_is_metafile && !dst_is_metafile)
+		return 0;
+
+	// Comparing a metafile to a non-metafile - definitely not similar
+	// so return nonzero
+	if (src_is_metafile != dst_is_metafile)
+		return 1;
+
+	// Both are metafiles, so compare their GUIDs
+
+	if (!src->oid_valid && diff_populate_filespec(r, src, NULL))
+		return 0;
+	if (!dst->oid_valid && diff_populate_filespec(r, dst, NULL))
+		return 0;
+
+	if (!unity_read_metafile_guid(r, &src->oid, src_guid))
+		return 0;
+	if (!unity_read_metafile_guid(r, &dst->oid, dst_guid))
+		return 0;
+
+	// Return 0 if identical, nonzero if different
+	return memcmp(src_guid, dst_guid, 32);
+}
+
 static int estimate_similarity(struct repository *r,
 			       struct diff_filespec *src,
 			       struct diff_filespec *dst,
@@ -196,6 +232,9 @@ static int estimate_similarity(struct repository *r,
 	if (!src->cnt_data && diff_populate_filespec(r, src, dpf_opt))
 		return 0;
 	if (!dst->cnt_data && diff_populate_filespec(r, dst, dpf_opt))
+		return 0;
+
+	if (unity_metafile_different_guids(r, src, dst) != 0)
 		return 0;
 
 	if (diffcore_count_changes(r, src, dst,

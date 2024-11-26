@@ -49,5 +49,6 @@ int unity_read_metafile_guid(struct repository *r,
     }
 
     memcpy(result, guid, 32);
+    free(buf);
     return 1;
 }

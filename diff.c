@@ -45,6 +45,7 @@
 #include "setup.h"
 #include "strmap.h"
 #include "ws.h"
+#include "unity.h"
 
 #ifdef NO_FAST_WORKING_DIRECTORY
 #define FAST_WORKING_DIRECTORY 0
@@ -3981,6 +3982,8 @@ struct diff_filespec *alloc_filespec(const char *path)
 	FLEXPTR_ALLOC_STR(spec, path, path);
 	spec->count = 1;
 	spec->is_binary = -1;
+	spec->is_unity_meta = -1;
+	
 	return spec;
 }
 
@@ -4121,6 +4124,7 @@ int diff_populate_filespec(struct repository *r,
 {
 	int size_only = options ? options->check_size_only : 0;
 	int check_binary = options ? options->check_binary : 0;
+	int check_unity_metafile_only = options ? options->check_unity_metafile_only : 0;
 	int err = 0;
 	int conv_flags = global_conv_flags_eol;
 	/*
@@ -4134,6 +4138,16 @@ int diff_populate_filespec(struct repository *r,
 		die("internal error: asking to populate invalid file.");
 	if (S_ISDIR(s->mode))
 		return -1;
+
+	if (check_unity_metafile_only && s->is_unity_meta != -1)
+		return 0;
+	
+	if (s->is_unity_meta == -1)
+	{
+		s->is_unity_meta = unity_is_metafile(r, s->path);
+		if (check_unity_metafile_only)
+			return 0;
+	}
 
 	if (s->data)
 		return 0;

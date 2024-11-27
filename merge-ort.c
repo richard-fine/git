@@ -873,6 +873,7 @@ static struct diff_filespec *pool_alloc_filespec(struct mem_pool *pool,
 
 	spec->count = 1;
 	spec->is_binary = -1;
+	spec->is_unity_meta = -1;
 	return spec;
 }
 

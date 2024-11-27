@@ -135,18 +135,22 @@ static int unity_metafile_different_guids(struct repository *r,
 				   struct diff_filespec *dst)
 {
 	char src_guid[32], dst_guid[32];
-	int src_is_metafile, dst_is_metafile;
+	struct diff_populate_filespec_options dpf_opt = {
+		.check_unity_metafile_only = 1
+	};
 
-	src_is_metafile = unity_is_metafile(r, src->path);
-	dst_is_metafile = unity_is_metafile(r, dst->path);
+	if (diff_populate_filespec(r, src, &dpf_opt))
+		return 0;
+	if (diff_populate_filespec(r, dst, &dpf_opt))
+		return 0;
 
 	// Check if neither one is a metafile
-	if (!src_is_metafile && !dst_is_metafile)
+	if (!src->is_unity_meta && !dst->is_unity_meta)
 		return 0;
 
 	// Comparing a metafile to a non-metafile - definitely not similar
 	// so return nonzero
-	if (src_is_metafile != dst_is_metafile)
+	if (src->is_unity_meta != dst->is_unity_meta)
 		return 1;
 
 	// Both are metafiles, so compare their GUIDs

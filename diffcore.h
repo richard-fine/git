@@ -61,6 +61,8 @@ struct diff_filespec {
 	unsigned has_more_entries : 1; /* only appear in combined diff */
 	/* data should be considered "binary"; -1 means "don't know yet" */
 	signed int is_binary : 2;
+	/* data should be considered a Unity .meta file; -1 means "don't know yet" */
+	signed int is_unity_meta : 2;
 	struct userdiff_driver *driver;
 };
 
@@ -78,6 +80,7 @@ void diff_queued_diff_prefetch(void *repository);
 struct diff_populate_filespec_options {
 	unsigned check_size_only : 1;
 	unsigned check_binary : 1;
+	unsigned check_unity_metafile_only : 1;
 
 	/*
 	 * If an object is missing, diff_populate_filespec() will invoke this
